@@ -1,0 +1,38 @@
+common:
+    lid_topic:  "/lidar_points"
+    imu_topic:  "/lidar_imu"
+    imu_gyr_unit: "deg"          # JT128 built-in IMU: gyro in deg/s (SDK scale 1/32.8) -> convert to rad/s
+
+preprocess:
+    lidar_type: 5                # 5 = PANDAR = Hesai x,y,z,intensity,ring,timestamp layout (JT128)
+    scan_line: 128
+    blind: 0.5                   # hyper-hemispherical FOV sees the robot body
+    feature_extract_en: false
+
+initialization:
+    cut_frame_num: 3             # 10 Hz frames -> 30 Hz pseudo-frames for the init odometry
+    orig_odom_freq: 10
+    mean_acc_norm: 1.0           # JT128 built-in IMU outputs acceleration in g (SDK scale 1/8192)
+    online_refine_time: 20.0
+    data_accum_length: 300
+    Rot_LI_cov: [ 0.00005, 0.00005, 0.00005 ]
+    Trans_LI_cov: [ 0.00001, 0.00001, 0.00000001 ]
+
+mapping:
+    filter_size_surf: 0.15
+    filter_size_map: 0.15
+    gyr_cov: 20
+    acc_cov: 2
+    b_acc_cov: 0.0001
+    b_gyr_cov: 0.0001
+    det_range: 60.0              # JT128 maximum range
+
+publish:
+    path_en: true
+    scan_publish_en: true
+    dense_publish_en: true
+    scan_bodyframe_pub_en: true
+
+pcd_save:
+    pcd_save_en: false
+    interval: -1

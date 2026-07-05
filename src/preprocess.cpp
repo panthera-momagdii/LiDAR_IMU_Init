@@ -345,6 +345,9 @@ void Preprocess::process(const sensor_msgs::PointCloud2::ConstPtr &msg, PointClo
         case L515:
             l515_handler(msg);
             break;
+        case PANDAR:   // Hesai family via HesaiLidar_ROS(_2.0): Pandar/XT/OT/JT16/JT128
+            hesai_handler(msg);
+            break;
 
         default:
             printf("Error LiDAR Type");
@@ -1099,4 +1102,36 @@ bool Preprocess::edge_jump_judge(const PointCloudXYZI &pl, vector<orgtype> &type
     }
 
     return true;
+}
+
+void Preprocess::hesai_handler(const sensor_msgs::PointCloud2::ConstPtr &msg) {
+    pl_surf.clear();
+    pl_corn.clear();
+    pl_full.clear();
+    pcl::PointCloud<pandar_ros::Point> pl_orig;
+    pcl::fromROSMsg(*msg, pl_orig);
+    int plsize = pl_orig.points.size();
+    if (plsize == 0) return;
+    pl_surf.reserve(plsize);
+
+    for (int i = 0; i < plsize; i++) {
+        PointType added_pt;
+        added_pt.normal_x = 0;
+        added_pt.normal_y = 0;
+        added_pt.normal_z = 0;
+        added_pt.x = pl_orig.points[i].x;
+        added_pt.y = pl_orig.points[i].y;
+        added_pt.z = pl_orig.points[i].z;
+        added_pt.intensity = pl_orig.points[i].intensity;
+        // offset time w.r.t. the first point of the frame, unit: ms
+        added_pt.curvature = (pl_orig.points[i].timestamp - pl_orig.points[0].timestamp) * 1000.0;
+
+        double dist = added_pt.x * added_pt.x + added_pt.y * added_pt.y + added_pt.z * added_pt.z;
+        if (dist < blind * blind || isnan(added_pt.x) || isnan(added_pt.y) || isnan(added_pt.z))
+            continue;
+
+        if (i % point_filter_num == 0 && pl_orig.points[i].ring < N_SCANS) {
+            pl_surf.points.push_back(added_pt);
+        }
+    }
 }

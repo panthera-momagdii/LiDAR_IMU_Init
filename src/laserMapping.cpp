@@ -306,6 +306,7 @@ void lasermap_fov_segment() {
 
 double timediff_imu_wrt_lidar = 0.0;
 bool timediff_set_flg = false;
+bool imu_gyr_is_deg = false;   // Hesai JT-series built-in IMU publishes angular velocity in deg/s
 
 void livox_pcl_cbk(const livox_ros_driver::CustomMsg::ConstPtr &msg) {
     mtx_buffer.lock();
@@ -411,6 +412,12 @@ void imu_cbk(const sensor_msgs::Imu::ConstPtr &msg_in, const ros::Publisher &pub
 
 
     sensor_msgs::Imu::Ptr msg(new sensor_msgs::Imu(*msg_in));
+
+    if (imu_gyr_is_deg) {
+        msg->angular_velocity.x *= M_PI / 180.0;
+        msg->angular_velocity.y *= M_PI / 180.0;
+        msg->angular_velocity.z *= M_PI / 180.0;
+    }
 
     //IMU Time Compensation
     msg->header.stamp = ros::Time().fromSec(msg->header.stamp.toSec() - timediff_imu_wrt_lidar - time_lag_IMU_wtr_lidar);
@@ -782,6 +789,9 @@ int main(int argc, char **argv) {
     nh.param<int>("preprocess/lidar_type", lidar_type, AVIA);
     nh.param<int>("preprocess/scan_line", p_pre->N_SCANS, 16);
     nh.param<bool>("preprocess/feature_extract_en", p_pre->feature_enabled, 0);
+    string imu_gyr_unit;
+    nh.param<string>("common/imu_gyr_unit", imu_gyr_unit, "rad");
+    imu_gyr_is_deg = (imu_gyr_unit == "deg");
     nh.param<bool>("initialization/cut_frame", cut_frame, true);
     nh.param<int>("initialization/cut_frame_num", cut_frame_num, 1);
     nh.param<int>("initialization/orig_odom_freq", orig_odom_freq, 10);
